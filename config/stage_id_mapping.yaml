@@ -1,0 +1,29 @@
+# Stage ID Mapping for Historical Backfill
+# =========================================
+# Maps deleted/renamed HubSpot stage IDs to their current
+# equivalents, for replaying dealstage property history.
+#
+# HOW TO GENERATE:
+#   python scripts/analytics/discover_historical_stages.py
+#   This script pulls your full deal population's stage
+#   history, finds IDs that no longer exist in your current
+#   pipeline config, and generates a template of this file
+#   for you to fill in.
+#
+# FILL IN: For each legacy stage, set maps_to_stage_id and
+# maps_to_order based on what that stage most closely
+# resembled in your current pipeline. Use null for stages
+# that have no modern equivalent (they'll be excluded from
+# the replay).
+#
+# Example entry:
+# unmapped_stages:
+#   - legacy_stage_id: "old_stage_abc123"
+#     seen_in_n_deals: 47
+#     status: deleted
+#     maps_to_stage_id: null      # ← FILL IN (or leave null)
+#     maps_to_order: null         # ← FILL IN (or leave null)
+#     notes: ""                   # ← optional context
+
+unmapped_stages: []
+# Run discover_historical_stages.py to populate this list

@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Test outputs
+test_*.json
+test_*.md
+
+# Data files (historical ETL artifacts)
+data/*.csv
+
+# Agent memory and output (contains customer data)
+memory/calls/*
+memory/deals/*
+memory/learnings/*
+memory/diffs/*
+memory/token_usage/*
+memory/versions/*
+memory/rubric_observations/*
+output/*
+scripts/analytics/*.csv
+!**/.gitkeep

@@ -1,0 +1,211 @@
+# Nightly MEDDICC Analysis Workflow
+#
+# Drop this file into: .github/workflows/nightly-meddicc-analysis.yml
+#
+# Required GitHub Secrets:
+#   - HUBSPOT_API_KEY (or your CRM API key)
+#   - GONG_API_KEY (or Fireflies/Apollo - whatever you use for call transcripts)
+#   - ANTHROPIC_API_KEY (for Claude API)
+#
+# This workflow:
+#   1. Fetches active deals from CRM
+#   2. Fetches call transcripts for each deal
+#   3. Runs 3-role MEDDICC analysis (Context Builder → Generator → Evaluator)
+#   4. Updates CRM with approved analyses
+#   5. Commits memory/learnings for continuous improvement
+
+name: Nightly MEDDICC Analysis
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC (customize to your timezone)
+    - cron: '0 2 * * *'
+
+  workflow_dispatch:  # Allow manual trigger for testing
+    inputs:
+      test_mode:
+        description: 'Run in test mode (limit to 5 deals)'
+        required: false
+        type: boolean
+        default: false
+      deal_id:
+        description: 'Specific deal ID to analyze (optional)'
+        required: false
+        type: string
+
+permissions:
+  contents: write  # Allows committing memory/learnings back to repo
+
+jobs:
+  meddicc-analysis:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # Full history for memory/learning tracking
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'  # Cache pip dependencies
+
+      - name: Install dependencies
+        run: |
+          pip install requests anthropic
+          # Add other dependencies your implementation needs
+
+      - name: Run MEDDICC Analysis
+        env:
+          # CRM API Key (HubSpot, Salesforce, etc.)
+          HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
+
+          # Call Intelligence API Keys (choose what you use)
+          GONG_API_KEY: ${{ secrets.GONG_API_KEY }}
+          FIREFLIES_API_KEY: ${{ secrets.FIREFLIES_API_KEY }}
+          APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+
+          # Claude API for 3-role analysis
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Test mode configuration
+          TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
+          TEST_DEAL_ID: ${{ github.event.inputs.deal_id || '' }}
+        run: |
+          python scripts/run_nightly.py
+        timeout-minutes: 60  # Adjust based on deal volume
+
+      - name: Commit memory and learnings
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage memory layer updates
+          git add memory/
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No memory updates to commit"
+          else
+            git commit -m "Update MEDDICC memory [skip ci]
+
+            - Daily analysis run: $(date -u +'%Y-%m-%d %H:%M UTC')
+            - Deals analyzed: see memory/learnings/ for details
+            - Context state: memory/versions/
+
+            Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+
+            git push
+          fi
+
+      - name: Upload analysis logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: meddicc-analysis-logs
+          path: |
+            logs/
+            memory/issues/
+          retention-days: 7
+
+      - name: Notify on failure (optional)
+        if: failure()
+        run: |
+          # Add Slack/email notification here if desired
+          echo "MEDDICC analysis failed - check logs"
+          # Example: curl -X POST $SLACK_WEBHOOK_URL -d '{"text":"MEDDICC analysis failed"}'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CUSTOMIZATION GUIDE
+# ─────────────────────────────────────────────────────────────────────────────
+
+# 1. SCHEDULE
+#    Change cron schedule to match your timezone:
+#    - '0 2 * * *'  = 2 AM UTC daily
+#    - '0 6 * * 1-5' = 6 AM UTC, Monday-Friday only
+#    - '0 14 * * *'  = 2 PM UTC daily
+
+# 2. SECRETS TO ADD IN GITHUB
+#    Go to: Settings → Secrets and variables → Actions → New repository secret
+#
+#    Required:
+#    - ANTHROPIC_API_KEY: Your Claude API key
+#    - HUBSPOT_API_KEY: (or SALESFORCE_API_KEY, etc.)
+#
+#    Optional (based on what you use):
+#    - GONG_API_KEY
+#    - FIREFLIES_API_KEY
+#    - APOLLO_API_KEY
+#
+#    Optional (for notifications):
+#    - SLACK_WEBHOOK_URL
+
+# 3. TIMEOUT
+#    Adjust timeout-minutes based on your deal volume:
+#    - 10-20 deals: 15 minutes
+#    - 50-100 deals: 30 minutes
+#    - 100-200 deals: 60 minutes
+
+# 4. PYTHON DEPENDENCIES
+#    Update the "Install dependencies" step with your actual requirements:
+#    pip install -r requirements.txt
+#
+#    Or list them explicitly:
+#    pip install requests anthropic hubspot-api-client
+
+# 5. NOTIFICATIONS
+#    Uncomment and configure the Slack notification step if desired:
+#
+#    - name: Notify on failure
+#      if: failure()
+#      run: |
+#        curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+#          -H 'Content-Type: application/json' \
+#          -d '{"text":"❌ MEDDICC analysis failed - check GitHub Actions"}'
+
+# 6. MULTIPLE ENVIRONMENTS
+#    Run different schedules for different environments:
+#
+#    - Development: Manual trigger only
+#    - Staging: Daily at 2 AM
+#    - Production: Daily at 3 AM (after deal ETL completes)
+
+# 7. COST OPTIMIZATION
+#
+#    For large deal volumes, consider:
+#    - Running on self-hosted runner instead of GitHub-hosted
+#    - Batching deals into smaller workflow runs
+#    - Using Haiku for Context Builder, Sonnet for Generator
+#    - Caching call transcripts to avoid re-fetching
+
+# 8. TESTING
+#
+#    Test the workflow before going live:
+#    1. Set TEST_MODE=true
+#    2. Manually trigger with workflow_dispatch
+#    3. Check a specific deal: provide deal_id input
+#    4. Review memory/learnings/ output
+#    5. Verify CRM updates are correct
+#    6. Then enable the cron schedule
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TROUBLESHOOTING
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Issue: Workflow times out
+# Fix: Increase timeout-minutes or reduce deal batch size
+
+# Issue: API rate limits hit
+# Fix: Add sleep/backoff in run_nightly.py API calls
+
+# Issue: Memory not committing
+# Fix: Check permissions: contents: write is set
+
+# Issue: Secrets not working
+# Fix: Verify secret names match exactly (case-sensitive)
+
+# Issue: Python import errors
+# Fix: Check Python version and ensure all dependencies installed

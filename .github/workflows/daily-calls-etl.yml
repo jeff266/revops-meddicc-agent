@@ -1,0 +1,71 @@
+name: Daily Calls ETL
+
+on:
+  schedule:
+    # Run daily at 1:30 AM UTC (after deal ETL at 1 AM, before nightly run at 2 AM)
+    - cron: '30 1 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  FIREFLIES_API_KEY: ${{ secrets.FIREFLIES_API_KEY }}
+  APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  GONG_ACCESS_KEY: ${{ secrets.GONG_ACCESS_KEY }}
+  GONG_ACCESS_KEY_SECRET: ${{ secrets.GONG_ACCESS_KEY_SECRET }}
+
+permissions:
+  contents: write  # Allow committing and pushing
+
+jobs:
+  etl-calls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: Agent  # Use Agent environment for secrets
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for cache management
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run incremental calls ETL (active deals only)
+        run: |
+          cd $GITHUB_WORKSPACE
+          python scripts/etl_calls.py \
+            --mode incremental \
+            --active-deals-only
+        continue-on-error: false
+
+      - name: Commit updated call cache
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add memory/calls/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update call cache [skip ci]"
+            git pull --rebase origin main || {
+              git rebase --abort
+              git pull origin main --no-rebase -X ours
+            }
+            git push
+          fi
+
+      - name: Upload cache artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: call-cache-${{ github.run_number }}
+          path: memory/calls/*.json
+          retention-days: 7

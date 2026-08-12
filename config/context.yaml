@@ -1,0 +1,410 @@
+# Business Context Configuration
+# This file teaches the AI about your industry, competitors, common objections,
+# feature gaps, and value metrics. Students fill this in via the onboarding skill.
+#
+# INSTRUCTIONS:
+# 1. Uncomment sections you want to use (remove the # at the start of each line)
+# 2. Replace example values with your organization's actual data
+# 3. Add or remove items as needed - these are just templates
+# 4. This file is read by the MEDDICC analysis system to provide domain context
+
+# ============================================================================
+# COMPETITIVE LANDSCAPE
+# ============================================================================
+# List all competitors your sales team encounters
+# Used to detect competitor mentions in call transcripts
+
+competitors:
+  # Direct competitors (same category, similar features)
+  direct:
+    # - name: "LaunchDarkly"
+    #   category: "Feature Management"
+    #   strengths:
+    #     - "Market leader"
+    #     - "Strong enterprise brand"
+    #   weaknesses:
+    #     - "Expensive"
+    #     - "Complex setup"
+    #   typical_deal_size: "enterprise"  # Options: smb, mid-market, enterprise
+
+    # - name: "Optimizely"
+    #   category: "Experimentation Platform"
+    #   strengths:
+    #     - "Full-stack testing"
+    #     - "Statistics engine"
+    #   weaknesses:
+    #     - "High cost"
+    #     - "Legacy UI"
+    #   typical_deal_size: "enterprise"
+
+    # - name: "Statsig"
+    #   category: "Feature Flags & Experimentation"
+    #   strengths:
+    #     - "Modern product"
+    #     - "Good pricing"
+    #   weaknesses:
+    #     - "Newer player"
+    #     - "Limited integrations"
+    #   typical_deal_size: "mid-market"
+
+  # Indirect competitors (adjacent solutions)
+  indirect:
+    # - name: "Amplitude"
+    #   category: "Product Analytics"
+    #   why_compared: "Some experimentation features"
+
+    # - name: "Mixpanel"
+    #   category: "Product Analytics"
+    #   why_compared: "Basic A/B testing capabilities"
+
+  # Incumbent solutions
+  incumbents:
+    # - name: "Homegrown"
+    #   description: "Custom-built internal feature flagging system"
+    #   typical_pain_points:
+    #     - "No analytics integration"
+    #     - "Lacks experimentation capabilities"
+    #     - "High engineering maintenance cost"
+
+    # - name: "None"
+    #   description: "Manual feature releases, no flagging"
+    #   typical_pain_points:
+    #     - "Risky releases"
+    #     - "Can't test before full rollout"
+    #     - "No way to measure feature impact"
+
+# ============================================================================
+# OBJECTION CATEGORIES
+# ============================================================================
+# Common sales objections your team encounters
+# Used to categorize and track objection patterns
+
+objection_categories:
+  # pricing:
+  #   patterns:
+  #     - "Too expensive"
+  #     - "Outside our budget"
+  #     - "Cheaper alternatives available"
+  #   typical_responses:
+  #     - "Demonstrate ROI with specific metrics"
+  #     - "Break down cost per user/experiment"
+  #     - "Compare to cost of failed releases"
+
+  # timing:
+  #   patterns:
+  #     - "Not ready yet"
+  #     - "No budget until next quarter"
+  #     - "Want to wait until after [milestone]"
+  #   typical_responses:
+  #     - "Understand the specific blocker"
+  #     - "Align timeline with their budget cycle"
+  #     - "Offer pilot to build internal momentum"
+
+  # technical_complexity:
+  #   patterns:
+  #     - "Too complex to implement"
+  #     - "Engineering team is busy"
+  #     - "Concerned about integration effort"
+  #   typical_responses:
+  #     - "Show quick integration examples"
+  #     - "Offer implementation support"
+  #     - "Reference similar customer integrations"
+
+  # feature_gaps:
+  #   patterns:
+  #     - "Missing [specific feature]"
+  #     - "Doesn't integrate with [our tool]"
+  #     - "Can't support our use case"
+  #   typical_responses:
+  #     - "Check product roadmap"
+  #     - "Find workarounds or alternatives"
+  #     - "Escalate to product team for feasibility"
+
+  # stakeholder_alignment:
+  #   patterns:
+  #     - "Need to convince [other team]"
+  #     - "Legal/Security has concerns"
+  #     - "Multiple teams need to approve"
+  #   typical_responses:
+  #     - "Map out all stakeholders"
+  #     - "Offer separate demo for each team"
+  #     - "Provide security/compliance docs early"
+
+# ============================================================================
+# FEATURE GAPS & PRODUCT FEEDBACK
+# ============================================================================
+# Track common feature requests and product gaps
+# Used to identify patterns in what prospects need
+
+feature_gaps:
+  # high_priority:
+  #   # Frequently requested, significant impact on deals
+  #   - name: "SSO/SAML Integration"
+  #     request_frequency: "high"
+  #     impact_on_deals: "high"
+  #     status: "on_roadmap"  # Options: on_roadmap, planned, not_planned
+  #     workaround: "Manual user provisioning via API"
+
+  #   - name: "Advanced Role-Based Access Control"
+  #     request_frequency: "medium"
+  #     impact_on_deals: "high"
+  #     status: "planned"
+  #     workaround: "Basic team-level permissions available"
+
+  # medium_priority:
+  #   - name: "Slack Integration for Experiment Results"
+  #     request_frequency: "medium"
+  #     impact_on_deals: "low"
+  #     status: "not_planned"
+  #     workaround: "Email notifications + Zapier"
+
+  # low_priority:
+  #   - name: "Dark Mode UI"
+  #     request_frequency: "low"
+  #     impact_on_deals: "low"
+  #     status: "not_planned"
+  #     workaround: "None"
+
+# ============================================================================
+# VALUE METRICS
+# ============================================================================
+# Quantifiable business outcomes your solution delivers
+# Used to identify when prospects mention these metrics in calls
+
+value_metrics:
+  # Direct business impact
+  # revenue_metrics:
+  #   - name: "Conversion Rate Improvement"
+  #     typical_range: "10-30%"
+  #     measurement: "Increase in checkout completion, signup rate, etc."
+
+  #   - name: "Revenue Per User"
+  #     typical_range: "5-20%"
+  #     measurement: "Higher ARPU from optimized pricing/upsells"
+
+  # cost_savings:
+  #   - name: "Reduced Failed Releases"
+  #     typical_range: "$100K-$500K annually"
+  #     measurement: "Avoided cost of bugs, rollbacks, downtime"
+
+  #   - name: "Engineering Efficiency"
+  #     typical_range: "20-40 hours/month saved"
+  #     measurement: "Less time spent on manual feature management"
+
+  # risk_reduction:
+  #   - name: "Faster Rollback Time"
+  #     typical_range: "Minutes vs. hours"
+  #     measurement: "Toggle features off instantly vs. emergency deploy"
+
+  #   - name: "Reduced Deployment Risk"
+  #     typical_range: "80% reduction in production incidents"
+  #     measurement: "Gradual rollouts catch issues before full release"
+
+  # velocity_improvements:
+  #   - name: "Release Frequency"
+  #     typical_range: "2-5x increase"
+  #     measurement: "Deploy multiple times per day vs. weekly"
+
+  #   - name: "Time to Value"
+  #     typical_range: "50% reduction"
+  #     measurement: "Ship features to users faster"
+
+# ============================================================================
+# INDUSTRY-SPECIFIC CONTEXT
+# ============================================================================
+# Domain knowledge about the industries you serve
+# Helps AI understand customer pain points and use cases
+
+industries:
+  # - name: "SaaS / B2B Software"
+  #   common_use_cases:
+  #     - "Freemium to paid conversion optimization"
+  #     - "New feature beta testing"
+  #     - "Pricing experiment for different tiers"
+  #   typical_pain_points:
+  #     - "Slow release cycles hurt competitive positioning"
+  #     - "Can't test pricing changes without full commit"
+  #     - "Hard to measure feature adoption"
+
+  # - name: "E-Commerce / Retail"
+  #   common_use_cases:
+  #     - "Checkout flow optimization"
+  #     - "Promotional campaign testing"
+  #     - "Product recommendation algorithms"
+  #   typical_pain_points:
+  #     - "High cart abandonment rates"
+  #     - "Seasonal campaigns need rapid iteration"
+  #     - "Can't test changes without impacting revenue"
+
+  # - name: "FinTech / Financial Services"
+  #   common_use_cases:
+  #     - "Compliance-safe feature rollouts"
+  #     - "Fraud detection algorithm testing"
+  #     - "Regional feature launches"
+  #   typical_pain_points:
+  #     - "Regulatory requirements slow releases"
+  #     - "Need audit trail for all changes"
+  #     - "High cost of errors in production"
+
+# ============================================================================
+# DISCOVERY QUESTIONS & OPPORTUNITY SIGNALS
+# ============================================================================
+# Questions that qualify deal strength
+# Used to detect strong vs weak opportunities in call transcripts
+
+discovery_signals:
+  # Key discovery questions to ask on first calls
+  qualification_questions:
+    - question: "How many teams are running experiments at the same time?"
+      why_it_matters: "One team = Pro conversation. Multiple teams = Enterprise only"
+      strong_answer_pattern: "Multiple teams|2+ teams|several teams"
+      weak_answer_pattern: "Just one team|single team"
+
+    - question: "Where does your data live today, and is there a mandate to keep it in your warehouse?"
+      why_it_matters: "Warehouse-first architecture is a core differentiator"
+      strong_answer_pattern: "Snowflake|BigQuery|Databricks|warehouse mandate|data stays in warehouse"
+      weak_answer_pattern: "don't know|no warehouse|send data out"
+
+    - question: "What's driving the evaluation right now? Are you on a contract renewal cycle?"
+      why_it_matters: "Active pain or contract renewal = urgency and budget allocated"
+      strong_answer_pattern: "contract up|renewal|vendor issues|pricing problems|switching from"
+      weak_answer_pattern: "just exploring|no timeline|researching"
+
+    - question: "Who else needs to be involved in a decision like this?"
+      why_it_matters: "Maps decision process and identifies economic buyer"
+      strong_answer_pattern: "names specific people|CFO|VP|CTO|director"
+      weak_answer_pattern: "not sure|just me|we'll figure it out"
+
+  # Strong opportunity signals (high win probability)
+  strong_signals:
+    - signal: "Multiple teams running experiments simultaneously"
+      component: "identified_pain"
+      why_strong: "Experiment Exclusion Groups become a hard requirement at scale"
+      evidence_keywords: ["multiple teams", "exclusion groups", "collision", "overlap"]
+
+    - signal: "SSO policy or 50+ users"
+      component: "decision_criteria"
+      why_strong: "Enterprise requirement, indicates large organization"
+      evidence_keywords: ["SSO", "Okta", "Azure", "SAML", "50 users", "100 users"]
+
+    - signal: "Compliance or audit log requirements"
+      component: "decision_criteria"
+      why_strong: "Enterprise security requirement, often blockers without it"
+      evidence_keywords: ["SOC 2", "HIPAA", "compliance", "audit log", "audit trail"]
+
+    - signal: "Pain around per-event pricing with current vendor"
+      component: "competition"
+      why_strong: "Active dissatisfaction with incumbent, budget already allocated"
+      evidence_keywords: ["Statsig pricing", "Optimizely cost", "Amplitude Experiment", "per-event", "usage pricing"]
+
+    - signal: "Warehouse-first mandate or active data migration"
+      component: "metrics"
+      why_strong: "Aligns with product's core architecture advantage"
+      evidence_keywords: ["Snowflake migration", "BigQuery", "Databricks", "data warehouse", "warehouse-native"]
+
+    - signal: "Frustration with metric definitions outside experiment tool"
+      component: "identified_pain"
+      why_strong: "Specific product differentiator"
+      evidence_keywords: ["metrics disconnect", "separate analytics", "definition drift", "metric consistency"]
+
+    - signal: "Champion who can name the economic buyer and has air cover for POC"
+      component: "champion"
+      why_strong: "Internal advocate with executive access and budget authority"
+      evidence_keywords: ["talked to [CFO/CTO]", "I can get approval", "budget owner", "POC approved"]
+
+  # Weak opportunity signals (low win probability)
+  weak_signals:
+    - signal: "Single team, small user base"
+      why_weak: "Pro tier conversation, low ARR potential"
+      evidence_keywords: ["one team", "small group", "few users", "pilot team"]
+
+    - signal: "No warehouse strategy or vendor lock-in concerns"
+      why_weak: "Missing core differentiator, commoditized feature comparison"
+      evidence_keywords: ["no warehouse", "vendor hosted", "don't care where data lives"]
+
+    - signal: "Just exploring, no active pain or timeline"
+      why_weak: "Low urgency, no budget, likely 6+ month sales cycle"
+      evidence_keywords: ["just looking", "researching", "no rush", "future project"]
+
+    - signal: "Can't name decision maker or budget owner"
+      why_weak: "No champion, no access to economic buyer"
+      evidence_keywords: ["not sure who decides", "need to find out", "don't know budget"]
+
+# ============================================================================
+# CHAMPION INDICATORS
+# ============================================================================
+# Signals that someone might be (or become) a champion
+# Used to identify champion strength in calls
+
+champion_indicators:
+  # strong_signals:
+  #   - "Mentions internal evangelizing ('I've been telling my team...')"
+  #   - "Proactively schedules additional stakeholder intros"
+  #   - "Shares competitive intel or insider info"
+  #   - "Asks about reference customers to build internal case"
+  #   - "Volunteers to present to their leadership"
+
+  # medium_signals:
+  #   - "Asks detailed implementation questions"
+  #   - "Responsive to outreach"
+  #   - "Brings other team members to calls"
+  #   - "Requests marketing materials or case studies"
+
+  # weak_signals:
+  #   - "Passively interested but not advocating"
+  #   - "Needs convincing themselves"
+  #   - "Only responds when pinged"
+
+# ============================================================================
+# LEARNING CONFIGURATION
+# ============================================================================
+# Settings for the continuous learning system
+# Controls how evaluator feedback improves future analyses
+
+learning:
+  # enabled: true
+
+  # # How often to update prompts based on learnings
+  # prompt_update_frequency: "weekly"  # Options: daily, weekly, monthly
+
+  # # Minimum iterations before auto-updating prompts
+  # minimum_iterations_before_update: 10
+
+  # # Track common failure patterns
+  # track_failure_patterns: true
+
+  # # Categories of learnings to capture
+  # learning_categories:
+  #   - "evidence_quality"
+  #   - "score_calibration"
+  #   - "false_gap_detection"
+  #   - "stage_alignment"
+  #   - "action_specificity"
+
+# ============================================================================
+# CUSTOMIZATION WORKFLOW
+# ============================================================================
+#
+# FOR STUDENTS:
+# This file is intentionally commented out. Use the onboarding skill to:
+#
+# 1. Review each section
+# 2. Uncomment relevant items
+# 3. Replace example values with your actual data
+# 4. Add new items specific to your organization
+#
+# PRIORITY ORDER:
+# 1. Start with competitors (most immediate impact on MEDDICC Competition scoring)
+# 2. Add value_metrics (helps with Metrics component)
+# 3. Define objection_categories (tracks objection patterns)
+# 4. Fill in feature_gaps (improves product feedback loop)
+# 5. Add industries and champion_indicators (nice-to-have)
+#
+# After completing this file, the system will:
+# - Better detect competitor mentions in calls
+# - Recognize when prospects mention your value metrics
+# - Categorize objections automatically
+# - Track feature gap patterns
+# - Provide more contextual MEDDICC analyses
+#
+# See README.md for detailed onboarding instructions.

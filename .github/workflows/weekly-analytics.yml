@@ -1,0 +1,50 @@
+name: Weekly Analytics
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Sunday 3:00 AM UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    environment: Agent
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Analytics deal ETL (all stages)
+        env:
+          HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/etl_deals.py --mode analytics
+
+      # Additional analytics steps can be added here:
+      # - Snapshot deals
+      # - Compute waterfall
+      # - Compute forecast
+      #
+      # Example:
+      # - name: Compute forecast
+      #   env:
+      #     SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      #     SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      #   run: python scripts/analytics/compute_forecast.py
+
+      - name: Compute pipeline generation
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/analytics/compute_pipeline_generation.py

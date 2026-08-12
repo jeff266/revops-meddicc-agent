@@ -1,0 +1,362 @@
+# Client Configuration
+# This file contains organization-specific settings for the MEDDICC analysis system.
+# Students should update these values to match their organization's HubSpot setup.
+
+# ============================================================================
+# ORGANIZATION INFO
+# ============================================================================
+organization:
+  name: "YOUR_ORGANIZATION_NAME"
+  crm: "HubSpot"
+  sales_methodology: "MEDDICC"  # Options: MEDDICC, MEDDPICC, MEDDIC
+  timezone: "America/New_York"  # Sales team timezone (e.g. America/Los_Angeles, Europe/London)
+  internal_domains:
+    - "YOUR_COMPANY_DOMAIN.com"
+    # Your reps' email domain — used to filter out
+    # internal attendees from participant matching
+    # Example: acme.com, yourcompany.io
+
+# ============================================================================
+# FISCAL YEAR CONFIGURATION
+# ============================================================================
+# When does your fiscal year start? This drives fiscal quarter calculations
+# used in pipeline generation and forecast analysis.
+#
+# Examples:
+#   1 = Calendar year (Jan-Dec)
+#   2 = Feb-Jan (FY starts Feb 1)
+#   4 = Apr-Mar (FY starts Apr 1)
+
+fiscal:
+  fy_start_month: 1  # Calendar year by default
+
+# ============================================================================
+# SEGMENTATION CONFIGURATION
+# ============================================================================
+# Company-size based segmentation for pipeline generation and in-quarter
+# contribution analysis. Enables tracking of different sales cycle lengths
+# by segment.
+#
+# Customize the thresholds and cycle times based on your GTM motion:
+#   - SMB (small/medium business): typically faster sales cycles
+#   - Mid-Market: moderate complexity and cycle time
+#   - Enterprise: longer sales cycles with more stakeholders
+#   - Unknown: deals without employee count data
+
+segmentation:
+  source: "company"  # Segmentation reads from associated Company object
+  field: "numberofemployees"  # HubSpot property on Company object
+  bands:
+    - name: "SMB"
+      max: 500
+      expected_cycle_days: 30
+      # Small/Medium Business: ≤500 employees, ~30-day sales cycle
+
+    - name: "Mid-Market"
+      min: 501
+      max: 2500
+      expected_cycle_days: 60
+      # Mid-Market: 501-2,500 employees, ~60-day sales cycle
+
+    - name: "Enterprise"
+      min: 2501
+      expected_cycle_days: 90
+      # Enterprise: 2,501+ employees, ~90-day sales cycle
+
+    - name: "Unknown"
+      expected_cycle_days: null
+      # No employee count or no company association - cannot predict cycle
+
+# ============================================================
+# METHODOLOGY & PROPERTY MAPPING (optional)
+# ============================================================
+# sales_methodology above drives which components are analyzed:
+#   MEDDICC (default) | MEDDPIC | SPICED | BANT
+# HubSpot property names default to <methodology>_* .
+# Override any of them here:
+# hubspot:
+#   properties:
+#     score: spiced_score
+#     status: spiced_status
+#     last_analyzed: spiced_last_analyzed
+#     summary: spiced_analysis_summary
+
+# ============================================================================
+# HUBSPOT PIPELINE CONFIGURATION
+# ============================================================================
+# Use scripts/discover_stages.py to find your organization's stage IDs.
+#
+# Each pipeline gets its own ordered stage list. order values are a
+# sales-cycle position WITHIN that pipeline only — they are NOT
+# comparable across pipelines (a renewal pipeline's order 3 has nothing
+# to do with the sales pipeline's order 3).
+#
+# Per-stage flags:
+#   is_won / is_lost            — terminal outcome stages
+#   exclude_from_analysis: true — excluded from active-deal MEDDICC
+#                                 analysis and pipeline analytics.
+#                                 Covers what used to be two separate
+#                                 buckets (Meeting Set / Disqualified) —
+#                                 anything pre-discovery, junk, or
+#                                 disqualified gets this flag.
+#
+#   RULE — Disqualified-type stages MUST carry BOTH is_lost: true AND
+#   exclude_from_analysis: true. is_lost makes the stage terminal for
+#   analytics: deal_status flips to 'lost', the deal exits the funnel,
+#   and it counts against qualification rate — it stays out of the
+#   win-rate denominator automatically via the qualified_stage_order
+#   filter, no separate handling needed. exclude_from_analysis keeps
+#   it out of the nightly MEDDICC agent's active-deal population. A
+#   stage with ONLY exclude_from_analysis (no is_lost) looks "active
+#   forever" in pipeline analytics — it never resolves to won or lost.
+#   Meeting Set is the one legitimate exception: it's pre-discovery
+#   and still open, so it gets exclude_from_analysis WITHOUT is_lost.
+#   See the commented Disqualified example stage below.
+#
+# Per-pipeline flags:
+#   is_primary: true  — exactly one pipeline; the default used wherever
+#                        a pipeline isn't specified explicitly.
+#   analyze: false    — excludes ALL of this pipeline's deals from
+#                        active-deal analysis (e.g. renewal, partner).
+#
+# qualified_stage_order: the first order value that counts as
+# "qualified" for this pipeline — sales cycle clock starts here, and
+# the win-rate denominator requires a deal to have reached it.
+
+pipeline:
+  value_field: amount
+  # Override to arr_value, tcv, acv, etc. if 'amount' is not
+  # the right value field for this client.
+
+  lost_reason_field: closed_lost_reason
+  # HubSpot's default property; many orgs use a custom one.
+  # Onboarding should detect candidates by scanning deal
+  # properties for names containing 'lost' + 'reason' and
+  # confirm with the client. Set null if the org doesn't
+  # track it.
+
+  pipelines:
+    - id: "default"
+      name: "Sales Pipeline"
+      is_primary: true
+      # analyze: false   # ← uncomment to exclude this whole pipeline
+      stages:
+        - id: "appointmentscheduled"
+          name: "Meeting Set"
+          order: 1
+          exclude_from_analysis: true
+        # - id: "YOUR_DISQUALIFIED_STAGE_ID"
+        #   name: "Disqualified"
+        #   order: 1
+        #   is_lost: true                # ← terminal: deal_status → 'lost'
+        #   exclude_from_analysis: true  # ← out of the active-deal population
+        #   # Both flags required — see the RULE above. order: 1 keeps
+        #   # it below qualified_stage_order (3), so a disqualified
+        #   # deal correctly never enters the win-rate denominator.
+        - id: "qualifiedtobuy"
+          name: "Discovery"
+          order: 2
+        - id: "presentationscheduled"
+          name: "Scoping"
+          order: 3
+        - id: "decisionmakerboughtin"
+          name: "Evaluation"
+          order: 4
+        - id: "contractsent"
+          name: "Proposal"
+          order: 5
+        - id: "closedwon"
+          name: "Closed Won"
+          order: 6
+          is_won: true
+        - id: "closedlost"
+          name: "Closed Lost"
+          order: 6
+          is_lost: true
+      qualified_stage_order: 3
+      # First order value that counts as "qualified" — sales
+      # cycle clock starts here, win rate denominator requires
+      # this threshold to have been reached.
+
+    # Additional pipelines (self-serve, partner, renewal, etc.)
+    # get their own stage list and their own
+    # qualified_stage_order — order values are NOT comparable
+    # across pipelines.
+    #
+    # - id: "YOUR_RENEWAL_PIPELINE_ID"
+    #   name: "Renewal Pipeline"
+    #   analyze: false   # excluded from active-deal analysis entirely
+    #   stages:
+    #     - id: "YOUR_RENEWAL_STAGE_ID"
+    #       name: "Renewal Stage"
+    #       order: 1
+    #     - id: "YOUR_RENEWAL_CLOSED_WON_ID"
+    #       name: "Renewal Closed Won"
+    #       order: 2
+    #       is_won: true
+    #     - id: "YOUR_RENEWAL_CLOSED_LOST_ID"
+    #       name: "Renewal Closed Lost"
+    #       order: 2
+    #       is_lost: true
+    #   qualified_stage_order: 1
+
+# ============================================================================
+# STAGE PROGRESSION REQUIREMENTS
+# ============================================================================
+# Minimum MEDDICC component scores required to advance between stages
+# Used by evaluator to validate stage recommendations
+
+stage_progression:
+  discovery_to_scoping:
+    identified_pain: 5
+    champion: 4
+    minimum_stakeholders: 2
+
+  scoping_to_proposal:
+    metrics: 6
+    economic_buyer: 6
+    champion: 6
+    decision_criteria: 5
+
+  proposal_to_negotiating:
+    # All components must meet minimum
+    all_components_minimum: 6
+    decision_process: 7
+    competition: 6
+
+  negotiating_to_closed_won:
+    # All components must be strong
+    all_components_minimum: 8
+    decision_process: 7
+    # If using MEDDPICC:
+    # paper_process: 7
+
+# ============================================================================
+# ANALYSIS QUALITY THRESHOLDS
+# ============================================================================
+# Evaluator pass/fail criteria
+# Based on deliverable/rubrics/evaluator-pass-fail-criteria.md
+
+quality_thresholds:
+  # Evaluation mode
+  # strict: Reject if ANY criterion fails (recommended for initial rollout)
+  # standard: Reject if 2+ criteria fail (after 30+ approved analyses)
+  # lenient: Reject if 3+ criteria fail (not recommended)
+  evaluation_mode: "strict"
+
+  # Minimum quality score to approve (0-100)
+  # Calculated from 7 criteria, each weighted
+  minimum_quality_score: 70
+
+  # Evidence requirements
+  evidence:
+    minimum_quotes_for_high_score: 2  # Scores 8+ need 2+ quotes
+    maximum_hedging_words: 2  # Max uses of "seems", "appears", "probably"
+
+  # Score justification ranges
+  score_ranges:
+    strong_identified:  # 9-10: Crystal clear, multiple confirmations
+      min: 9
+      max: 10
+    identified:  # 7-8: Clear evidence, single confirmation
+      min: 7
+      max: 8
+    partial:  # 5-6: Partial info, needs clarification
+      min: 5
+      max: 6
+    weak:  # 3-4: Vague mention, significant gaps
+      min: 3
+      max: 4
+    unknown:  # 1-2: Not discussed or unknown
+      min: 1
+      max: 2
+
+# ============================================================================
+# DEAL HEALTH CALCULATION
+# ============================================================================
+# Rules for determining overall deal health status
+
+deal_health:
+  strong:
+    minimum_components_above_6: 5  # Need 5+ components scoring 6+
+    minimum_champion_score: 5
+
+  at_risk:
+    # Deal is at risk if ANY of these conditions are true
+    critical_components_below_5: ["champion", "economic_buyer"]
+    components_below_5_count: 3  # 3+ components below 5
+    champion_score_below: 5
+
+# ============================================================================
+# TOKEN BUDGET & MODEL SELECTION
+# ============================================================================
+# Control costs and performance
+
+models:
+  context_builder:
+    name: "claude-haiku-4-5-20251001"
+    base_tokens: 2000
+    tokens_per_call: 500  # Additional tokens per historical call
+    max_tokens_cap: 16000
+
+  generator:
+    name: "claude-sonnet-4-5-20250929"
+    max_tokens: 8000
+
+  evaluator:
+    name: "claude-sonnet-4-5-20250929"
+    max_tokens: 4000
+
+# ============================================================================
+# CALL INTELLIGENCE PLATFORM
+# ============================================================================
+# Configure which call recording platform to use for transcript extraction
+# Supported: fireflies, gong
+
+call_tools:
+  # Primary call intelligence platform
+  # Options: 'fireflies' (Fireflies.ai) or 'gong' (Gong.io)
+  primary: "fireflies"
+
+# ============================================================================
+# ETL CONFIGURATION
+# ============================================================================
+# Settings for nightly deal and call ingestion
+
+etl:
+  # Deal properties to fetch from HubSpot
+  # Add custom properties your organization uses
+  deal_properties:
+    - dealname
+    - dealstage
+    - pipeline
+    - closedate
+    - amount
+    - incremental_arr
+    - hubspot_owner_id
+    - createdate
+    - hs_lastmodifieddate
+    # Add your custom properties here:
+    # - custom_priority_score
+    # - industry_vertical
+
+  # Refresh frequency
+  active_deals_refresh: "nightly"  # How often to refresh active deal list
+  call_lookback_days: 90  # How far back to look for calls
+
+# ============================================================================
+# CUSTOMIZATION NOTES
+# ============================================================================
+#
+# To customize this for your organization:
+#
+# 1. Run scripts/discover_stages.py to get your HubSpot stage IDs
+# 2. Fill in pipeline.pipelines[] with your real stage IDs, order
+#    values, and is_won/is_lost/exclude_from_analysis/qualified_stage_order
+# 3. Add renewal/partner pipelines under pipeline.pipelines[] with
+#    analyze: false if they shouldn't be analyzed
+# 4. Adjust stage_progression thresholds based on your sales process
+# 5. Set evaluation_mode to "strict" for initial rollout
+# 6. Add custom deal_properties you want to include in analysis
+#
+# See README.md for detailed setup instructions.

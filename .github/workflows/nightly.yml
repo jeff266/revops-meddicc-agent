@@ -1,0 +1,150 @@
+name: MEDDICC Agent Nightly Run
+
+on:
+  schedule:
+    # Run at 2am UTC daily
+    - cron: '0 2 * * *'
+
+  workflow_dispatch:  # Allow manual triggers
+    inputs:
+      test_mode:
+        description: 'Test mode (limits to 5 deals)'
+        required: false
+        default: 'false'
+      test_deal_id:
+        description: 'Specific deal ID to test (optional, e.g. 55660576681)'
+        required: false
+        default: ''
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  FIREFLIES_API_KEY: ${{ secrets.FIREFLIES_API_KEY }}
+  GONG_ACCESS_KEY: ${{ secrets.GONG_ACCESS_KEY }}
+  GONG_ACCESS_KEY_SECRET: ${{ secrets.GONG_ACCESS_KEY_SECRET }}
+  APOLLO_API_KEY: ${{ secrets.APOLLO_API_KEY }}
+  HUBSPOT_API_KEY: ${{ secrets.HUBSPOT_API_KEY }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_REPO: ${{ github.repository }}
+  TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
+  TEST_DEAL_ID: ${{ github.event.inputs.test_deal_id || '' }}
+
+jobs:
+  run-meddicc-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120  # 2 hour timeout
+    environment: Agent  # Use Agent environment for secrets
+    permissions:
+      contents: write  # Allow pushing commits
+      pull-requests: write  # Allow creating PRs
+      issues: write  # Allow creating issues on failure
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for version tracking
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ETL step commented out - redundant with run_nightly.py delta fetching
+      # The call cache is current. run_nightly.py handles delta fetching via
+      # get_calls_for_company() which checks cache date and only hits live APIs
+      # for new calls per company. The separate ETL step was slow (60-90 min)
+      # and caused Apollo rate limits. Only run manually when needed.
+      #
+      # - name: Update call cache (ETL)
+      #   id: run_etl
+      #   run: |
+      #     cd $GITHUB_WORKSPACE
+      #     python scripts/etl_calls.py --mode incremental
+      #   continue-on-error: false
+
+      - name: Run MEDDICC agent
+        id: run_agent
+        run: |
+          cd $GITHUB_WORKSPACE
+          python scripts/run_nightly.py 2>&1 | tee /tmp/run_output.txt
+          echo "Exit code: $?"
+        continue-on-error: true
+
+      - name: Show run result
+        if: always()
+        run: |
+          echo "Run agent outcome: ${{ steps.run_agent.outcome }}"
+          echo "Run agent conclusion: ${{ steps.run_agent.conclusion }}"
+
+      - name: Show script output on failure
+        if: steps.run_agent.outcome == 'failure'
+        run: cat /tmp/run_output.txt
+
+      - name: Check for errors
+        if: steps.run_agent.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue_title = `MEDDICC Agent Failed - ${new Date().toISOString().split('T')[0]}`;
+            const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const issue_body = `The nightly MEDDICC agent run failed.
+
+            **Workflow Run**: ${workflowUrl}
+            **Time**: ${new Date().toISOString()}
+
+            Please check the workflow logs for details.
+
+            cc: @jeffignacio`;
+
+            // Check if issue already exists for today
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'meddicc-agent-error',
+              per_page: 10
+            });
+
+            const today = new Date().toISOString().split('T')[0];
+            const existingIssue = issues.find(issue => issue.title.includes(today));
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issue_title,
+                body: issue_body,
+                labels: ['meddicc-agent-error', 'automated']
+              });
+            }
+
+      - name: Upload learning artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meddicc-learnings-${{ github.run_number }}
+          path: |
+            memory/learnings/*.json
+            memory/diffs/*.md
+            output/*.md
+          retention-days: 90
+
+      - name: Commit memory and analysis updates
+        if: steps.run_agent.outcome == 'success'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add memory/ output/
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update MEDDICC agent memory and analyses [skip ci]"
+          git pull --rebase origin main || {
+            git rebase --abort
+            git pull origin main --no-rebase -X ours
+          }
+          git push
