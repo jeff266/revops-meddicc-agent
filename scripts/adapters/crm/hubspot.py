@@ -578,6 +578,38 @@ class HubSpotDealsClient(CRMAdapter):
     # Deprecation alias — old callers keep working.
     setup_hubspot_properties = setup_properties
 
+    def write_component_scores(self, deal_id: str,
+                                component_details: dict) -> dict:
+        """
+        Write per-component scores, statuses, and evidence
+        rationale to HubSpot deal properties.
+
+        Property naming: {methodology}_{component}_{field}
+        e.g. for MEDDICC: meddicc_metrics_score
+             for SPICED:   spiced_situation_score
+
+        Uses the cumulative state from context_builder —
+        NOT the regex-extracted scores from markdown.
+
+        Run setup_hubspot_properties.py once before using this.
+        """
+        from utils import get_methodology
+        prefix = get_methodology().lower()
+        properties = {}
+        for component, data in component_details.items():
+            properties[f"{prefix}_{component}_score"] = \
+                str(data.get('score', 0))
+            properties[f"{prefix}_{component}_status"] = \
+                data.get('status', 'unknown')
+            properties[f"{prefix}_{component}_rationale"] = \
+                (data.get('evidence') or '').strip()[:1000]
+        if not properties:
+            return {}
+        return self._patch(
+            f"/crm/v3/objects/deals/{deal_id}",
+            {"properties": properties}
+        )
+
     def test_connection(self) -> bool:
         """Test API connection."""
         try:

@@ -165,7 +165,7 @@ class SupabaseWriter(StorageAdapter):
 
     def insert_analysis(self, deal_id: str, company_name: str,
                         result: dict, scores: dict,
-                        output_file: str) -> None:
+                        output_file: str, component_details: dict = None) -> None:
         """
         Insert a new analysis row.
 
@@ -204,6 +204,7 @@ class SupabaseWriter(StorageAdapter):
             'summary':                 scores.get('summary', ''),
             'output_file':             output_file,
             'component_scores':        component_scores,
+            'component_details':       json.dumps(component_details) if component_details else None,
         }
 
         try:

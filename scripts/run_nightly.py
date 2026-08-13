@@ -35,6 +35,28 @@ from utils import slugify, get_methodology, get_components, component_key
 REPO_ROOT = Path(__file__).parent.parent
 
 
+def _extract_component_details(cumulative_state: dict) -> dict:
+    """
+    Pulls per-component {score, status, evidence} from the
+    context builder's cumulative state.
+    Returns a dict keyed by component name, ready for
+    HubSpot write-back and Supabase storage.
+    """
+    methodology = get_methodology().lower()
+    state_key = f'{methodology}_state'
+    state = cumulative_state.get(state_key, {})
+    details = {}
+    for component, data in state.items():
+        if not isinstance(data, dict):
+            continue
+        details[component] = {
+            'score':    data.get('score', 0),
+            'status':   data.get('status', 'unknown'),
+            'evidence': (data.get('evidence') or '').strip()[:1000],
+        }
+    return details
+
+
 def get_calls_for_company(company_name: str, since_date, memory) -> tuple:
     """
     Load calls from cache only. No live API calls.
@@ -418,6 +440,7 @@ def main():
 
                 # Build cumulative qualification state
                 cumulative_state = build_cumulative_state(historical_summaries, company_name, tracker)
+                component_details = _extract_component_details(cumulative_state)
 
             # GUARD 3: Most recent call is below minimum signal threshold
             if not recent_call_summary or len(recent_call_summary.strip()) < 100:
@@ -478,6 +501,8 @@ def main():
                     analysis_content=analysis,
                     calls_count=total_calls
                 )
+                # Write per-component scores/rationales
+                hubspot.write_component_scores(deal_id, component_details)
             except Exception as hub_error:
                 pass  # Silent fail - analysis already saved to file
 
@@ -489,7 +514,8 @@ def main():
                         company_name=company_name,
                         result=result,
                         scores=scores,
-                        output_file=str(output_file.name)
+                        output_file=str(output_file.name),
+                        component_details=component_details
                     )
                 except Exception as e:
                     pass  # Silent fail
